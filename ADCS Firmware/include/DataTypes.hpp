@@ -11,18 +11,8 @@ enum OperationMode {
 enum RequestType {
     STATUS,
     ADCS_DATA,
-    GENERATES_RESPONSE,
     MISSION_CHANGE
 };
-
-typedef struct ADCSI2CTransaction {
-    
-} ADCSI2CTransaction;
-
-typedef struct OBSRequest {
-    RequestType req;
-    OperationMode op_mode;
-} OBSRequest;
 
 typedef struct GPSData {
     long longutude;

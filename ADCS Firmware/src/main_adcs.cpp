@@ -6,7 +6,6 @@
 OperationMode op_mode = IDLE;
 GPSData gps_data;
 OrientationData o_data;
-
 RequestType req_type;
 
 void sample_data()
@@ -29,32 +28,44 @@ void sample_data()
 
 void send_data()
 {
-  // Pack data into message
-  ADCSData adcs_data;
-  adcs_data.gps_data = gps_data;
-  adcs_data.o_data = o_data;
-
-  Wire.write(reinterpret_cast<uint8_t*>(&adcs_data), sizeof(ADCSData));
-}
-
-void process_command(int n_bytes)
-{
-  OBSRequest obs_req;
-
-  // while (Wire.available() < sizeof(OBSRequest)) {}; // Not the nicest way to wait but fine for now
-
-  Wire.readBytes(reinterpret_cast<uint8_t*>(&obs_req), sizeof(OBSRequest));
-
-  req_type = obs_req.req;
-  
-  switch (obs_req.req)
+  switch (req_type)
   {
-  case MISSION_CHANGE:
-    op_mode = obs_req.op_mode;
+  case ADCS_DATA:
+    // Pack ADCS Data into buffer and 
+    ADCSData adcs_data;
+    adcs_data.gps_data = gps_data;
+    adcs_data.o_data = o_data;
+    Wire.write(reinterpret_cast<uint8_t*>(&adcs_data), sizeof(adcs_data));
     break;
 
+  case STATUS:
+    // Pack status into buffer
+    Wire.write((char*)&op_mode);
+    break;
+  
   default:
-    Serial.println("Unrecognised request type.");
+    Serial.println("Unrecognised data send request type.");
+  }
+}
+
+void process_OBS_request(int n_bytes)
+{
+  // while (Wire.available() < sizeof(OBSRequest)) {}; // Not the nicest way to wait but fine for now
+
+  // Take the first byte to see what type of request it is.
+  if (Wire.available()) {
+    req_type = (RequestType)Wire.read();
+  }
+  
+  switch (req_type)
+  {
+  case MISSION_CHANGE:
+    // Grab the next byte to read the new mission type
+    if (Wire.available()) {
+      op_mode = (OperationMode)Wire.read();
+    }
+    break;
+  default:
     break;
   }
 }
@@ -65,7 +76,7 @@ void setup()
   Serial.begin(9600);
 
   Wire.onRequest(send_data);
-  Wire.onReceive(process_command);
+  Wire.onReceive(process_OBS_request);
 }
 
 void loop()
