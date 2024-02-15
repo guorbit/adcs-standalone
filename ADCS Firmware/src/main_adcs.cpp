@@ -3,10 +3,31 @@
 #include "Board_settings.hpp"
 #include "DataTypes.hpp"
 
-OperationMode op_mode = IDLE;
+ADCS_State state = IDLE;
 GPSData gps_data;
 OrientationData o_data;
 RequestType req_type;
+
+
+// State transistion table provides transition lookups.
+// Row index is the current state
+// Column contains destination state
+// Set to 0 if invalid, set to 1 if valid
+int state_transition_table[NUM_STATES][NUM_STATES] = {
+  {1,1},
+  {1,1}
+};
+// All ones implies all transistions are valid.
+
+TransError_t change_state(ADCS_State new_state)
+{
+  if (state_transition_table[state][new_state]) {
+    state = new_state;
+    return SUCCESS;
+  } else {
+    return FAIL;
+  }
+}
 
 void sample_data()
 {
@@ -40,7 +61,7 @@ void send_data()
 
   case STATUS:
     // Pack status into buffer
-    Wire.write((char*)&op_mode);
+    Wire.write((char*)&state);
     break;
   
   default:
@@ -62,7 +83,8 @@ void process_OBS_request(int n_bytes)
   case MISSION_CHANGE:
     // Grab the next byte to read the new mission type
     if (Wire.available()) {
-      op_mode = (OperationMode)Wire.read();
+      ADCS_State new_state = (ADCS_State)Wire.read();
+      TransError_t status = change_state(new_state);
     }
     break;
   default:

@@ -19,7 +19,7 @@ void get_ADCS_data(ADCSData *data)
     Wire.readBytes(reinterpret_cast<uint8_t*>(&data), sizeof(ADCSData));
 }
 
-void set_ADCS_mode(OperationMode mode)
+void set_ADCS_mode(ADCS_State mode)
 {
     // Pack request type and new mode into a buffer
     char buffer[] = {
@@ -27,26 +27,26 @@ void set_ADCS_mode(OperationMode mode)
         (char) mode
     };
 
-    Serial.println("Sending ADCS mode");
+    Serial.println("Sending ADCS MISSION_CHANGE Request");
 
     // Send the buffer
     Wire.beginTransmission(ADCS_I2C_ADDR);
     Wire.write(buffer, sizeof(buffer));
     Wire.endTransmission();
-
-    Serial.println("ADCS mode sent");
 }
 
-OperationMode get_ADCS_status()
+ADCS_State get_ADCS_status()
 {
     RequestType req_type = STATUS;
+
+    Serial.println("Sending ADCS DATA Request");
 
     Wire.beginTransmission(ADCS_I2C_ADDR);
     Wire.write((uint8_t*)&req_type, 1);
     Wire.endTransmission();
 
-    Wire.requestFrom(ADCS_I2C_ADDR, sizeof(OperationMode));
-    return (OperationMode) Wire.read();
+    Wire.requestFrom(ADCS_I2C_ADDR, sizeof(ADCS_State));
+    return (ADCS_State) Wire.read();
 }
 
 void print_adcs_data(ADCSData *data)
@@ -82,7 +82,7 @@ void loop()
     Serial.print("ADCS status: ");
     Serial.println(get_ADCS_status());
 
-    set_ADCS_mode(EARTH_TRACKING);
+    set_ADCS_mode(IDLE);
     Serial.print("ADCS status: ");
     Serial.println(get_ADCS_status());
 

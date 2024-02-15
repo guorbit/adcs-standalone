@@ -1,11 +1,14 @@
 #pragma once
 
-enum OperationMode {
+enum ADCS_State {
     IDLE,
     DETUMBLE,
-    EARTH_TRACKING,
-    MISSION2,
-    MISSION3
+    NUM_STATES
+};
+
+enum TransError_t {
+    FAIL,
+    SUCCESS
 };
 
 enum RequestType {
