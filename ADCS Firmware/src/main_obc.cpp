@@ -4,7 +4,7 @@
 #include "Board_settings.hpp"
 #include "DataTypes.hpp"
 
-void get_ADCS_data(ADCSData *data)
+void get_ADCS_data_blocking(ADCSData *data)
 {
     RequestType req_type = ADCS_DATA;
 
@@ -28,12 +28,12 @@ void get_ADCS_data(ADCSData *data)
     Serial.println("Read data");
 }
 
-void set_ADCS_mode(ADCS_State mode)
+ErrorReponse set_ADCS_mode_blocking(ADCS_State new_state)
 {
     // Pack request type and new mode into a buffer
     char buffer[] = {
         (char) MISSION_CHANGE,
-        (char) mode
+        (char) new_state
     };
 
     Serial.println("Sending ADCS MISSION_CHANGE Request");
@@ -42,9 +42,14 @@ void set_ADCS_mode(ADCS_State mode)
     Wire.beginTransmission(ADCS_I2C_ADDR);
     Wire.write(buffer, sizeof(buffer));
     Wire.endTransmission();
+
+    // Check if the mode change was successful
+    Wire.requestFrom(ADCS_I2C_ADDR, sizeof(ErrorReponse));
+    while (Wire.available() < sizeof(ErrorReponse)) {}
+    return (ErrorReponse)Wire.read();
 }
 
-ADCS_State get_ADCS_status()
+ADCS_State get_ADCS_status_blocking()
 {
     Serial.println("Getting Status");
     RequestType req_type = STATUS;
@@ -99,18 +104,18 @@ void loop()
 { 
     
     Serial.println("Starting loop.");
-    set_ADCS_mode(DETUMBLE);
+    set_ADCS_mode_blocking(DETUMBLE);
     delay(50);
     Serial.print("ADCS status: ");
-    Serial.println(get_ADCS_status());
+    Serial.println(get_ADCS_status_blocking());
 
-    set_ADCS_mode(IDLE);
+    set_ADCS_mode_blocking(IDLE);
     Serial.print("ADCS status: ");
-    Serial.println((int)get_ADCS_status());
+    Serial.println((int)get_ADCS_status_blocking());
     delay(50);
 
     ADCSData adcs_data;
-    get_ADCS_data(&adcs_data);
+    get_ADCS_data_blocking(&adcs_data);
     print_adcs_data(&adcs_data);
 
     delay(500);

@@ -6,15 +6,15 @@ enum ADCS_State {
     NUM_STATES
 };
 
-enum TransError_t {
-    FAIL,
-    SUCCESS
-};
-
 enum RequestType {
     STATUS,
     ADCS_DATA,
     MISSION_CHANGE
+};
+
+enum ErrorReponse {
+    FAIL,
+    SUCCESS
 };
 
 typedef struct GPSData {

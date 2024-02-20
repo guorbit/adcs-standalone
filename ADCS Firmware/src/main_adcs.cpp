@@ -4,10 +4,12 @@
 #include "DataTypes.hpp"
 
 ADCS_State state = IDLE;
+ADCS_State new_state;
 GPSData gps_data;
 OrientationData o_data;
 RequestType req_type;
 
+// State Machine Checking -------------------------------------------------------------------
 
 // State transistion table provides transition lookups.
 // Row index is the current state
@@ -19,7 +21,7 @@ int state_transition_table[NUM_STATES][NUM_STATES] = {
 };
 // All ones implies all transistions are valid.
 
-TransError_t change_state(ADCS_State new_state)
+ErrorReponse change_state()
 {
   if (state_transition_table[state][new_state]) {
     state = new_state;
@@ -28,6 +30,8 @@ TransError_t change_state(ADCS_State new_state)
     return FAIL;
   }
 }
+
+// Helper Functions ------------------------------------------------------------------------
 
 void print_adcs_data(ADCSData *data)
 {
@@ -64,31 +68,37 @@ void sample_data()
   return;
 }
 
+// OSB Request Functions ------------------------------------------------------------------
+
+void send_ADCS_data() {
+  // Pack ADCS Data into buffer and
+  ADCSData adcs_data;
+  adcs_data.gps_data = gps_data;
+  adcs_data.o_data = o_data;
+  print_adcs_data(&adcs_data);
+  Serial.println("Writin ADCS data");
+  Wire.write(reinterpret_cast<uint8_t*>(&adcs_data), sizeof(adcs_data));
+  Serial.println("Wrote data :)");
+}
+
+void send_status() {
+  // Pack status into buffer and send
+  Wire.write((char*)&state);
+}
+
+void change_mode() {
+  ErrorReponse status = change_state();
+  Wire.write((uint8_t*)&status, sizeof(status));
+}
+
+void (*request_functions[])() = {send_ADCS_data, send_status, change_mode};
+
 void send_data()
 {
   Serial.println("Data requested.");
   Serial.println((int)req_type);
-  switch (req_type)
-  {
-  case ADCS_DATA:
-    // Pack ADCS Data into buffer and
-    ADCSData adcs_data;
-    adcs_data.gps_data = gps_data;
-    adcs_data.o_data = o_data;
-    print_adcs_data(&adcs_data);
-    Serial.println("Writin ADCS data");
-    Wire.write(reinterpret_cast<uint8_t*>(&adcs_data), sizeof(adcs_data));
-    Serial.println("Wrote data :)");
-    break;
 
-  case STATUS:
-    // Pack status into buffer
-    Wire.write((char*)&state);
-    break;
-  
-  default:
-    Serial.println("Unrecognised data send request type.");
-  }
+  request_functions[req_type]();
 }
 
 void process_OBS_request(int n_bytes)
@@ -107,8 +117,7 @@ void process_OBS_request(int n_bytes)
   case MISSION_CHANGE:
     // Grab the next byte to read the new mission type
     if (Wire.available()) {
-      ADCS_State new_state = (ADCS_State)Wire.read();
-      TransError_t status = change_state(new_state);
+      new_state = (ADCS_State)Wire.read();
     }
     break;
   default:
