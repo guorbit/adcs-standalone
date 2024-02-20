@@ -67,12 +67,6 @@ ADCS_State get_ADCS_status()
     int num = Wire.requestFrom(ADCS_I2C_ADDR, 1);
     Serial.println(num);
 
-    Serial.println(Wire.read());
-    return (OperationMode) Wire.read();
-    Wire.write((uint8_t*)&req_type, 1);
-    Wire.endTransmission();
-
-    Wire.requestFrom(ADCS_I2C_ADDR, sizeof(ADCS_State));
     return (ADCS_State) Wire.read();
 }
 
