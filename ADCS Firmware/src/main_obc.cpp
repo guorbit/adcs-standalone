@@ -8,15 +8,24 @@ void get_ADCS_data(ADCSData *data)
 {
     RequestType req_type = ADCS_DATA;
 
+    Serial.println("Setting ADCS_DATA req");
+
     // Set the transaction type in the ADCS
     Wire.beginTransmission(ADCS_I2C_ADDR);
     Wire.write((uint8_t*)&req_type, 1);
     Wire.endTransmission();
 
+    
+    Serial.println("ADCS_DATA req set");
+
+    delay(50);
+
     // Request the data from ADCS
     Wire.requestFrom(ADCS_I2C_ADDR, sizeof(ADCSData));
     while (Wire.available() < sizeof(ADCSData)) {}
-    Wire.readBytes(reinterpret_cast<uint8_t*>(&data), sizeof(ADCSData));
+    Wire.readBytes(reinterpret_cast<uint8_t*>(data), sizeof(ADCSData));
+
+    Serial.println("Read data");
 }
 
 void set_ADCS_mode(ADCS_State mode)
@@ -37,11 +46,29 @@ void set_ADCS_mode(ADCS_State mode)
 
 ADCS_State get_ADCS_status()
 {
+    Serial.println("Getting Status");
     RequestType req_type = STATUS;
 
-    Serial.println("Sending ADCS DATA Request");
+    delay(1000);
 
     Wire.beginTransmission(ADCS_I2C_ADDR);
+    int n = Wire.write((uint8_t*)&req_type, 1);
+
+    Serial.print(n);
+    Serial.println(" bytes written.");
+    int e = Wire.endTransmission();
+    Serial.print("Error: ");
+    Serial.println(e);
+
+    Serial.println("Set request type in ADCS.");
+
+    delay(50);
+
+    int num = Wire.requestFrom(ADCS_I2C_ADDR, 1);
+    Serial.println(num);
+
+    Serial.println(Wire.read());
+    return (OperationMode) Wire.read();
     Wire.write((uint8_t*)&req_type, 1);
     Wire.endTransmission();
 
@@ -79,12 +106,14 @@ void loop()
     
     Serial.println("Starting loop.");
     set_ADCS_mode(DETUMBLE);
+    delay(50);
     Serial.print("ADCS status: ");
     Serial.println(get_ADCS_status());
 
     set_ADCS_mode(IDLE);
     Serial.print("ADCS status: ");
-    Serial.println(get_ADCS_status());
+    Serial.println((int)get_ADCS_status());
+    delay(50);
 
     ADCSData adcs_data;
     get_ADCS_data(&adcs_data);
